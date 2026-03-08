@@ -1,0 +1,1204 @@
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#090b12">
+<title>LeadPing</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --bg:#090b12;--bg2:#0d1020;--bg3:#111526;
+  --card:#151929;--card2:#1a1f30;
+  --rim:#1e2438;--rim2:#262d42;
+  --sig:#00e87a;--sig2:#00b85f;--sigD:rgba(0,232,122,0.1);
+  --blue:#3d8ff8;--blue2:#6aadff;
+  --amber:#f5a623;--amber2:#ffc045;
+  --rose:#f5365c;--rose2:#ff6680;
+  --violet:#7c5cfc;
+  --text:#e0e8f8;--text2:#8b98b8;--muted:#485268;
+  --safeT:env(safe-area-inset-top,0px);
+  --safeB:env(safe-area-inset-bottom,0px);
+}
+html,body{height:100%;overflow:hidden;font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);font-size:15px}
+body{display:flex;flex-direction:column;max-width:430px;margin:0 auto}
+
+.amb{position:fixed;inset:0;pointer-events:none;z-index:0;
+background:radial-gradient(ellipse 80% 40% at 50% 0%,rgba(0,232,122,.05) 0%,transparent 60%),
+radial-gradient(ellipse 60% 40% at 80% 100%,rgba(61,143,248,.04) 0%,transparent 60%)}
+
+/* STATUSBAR */
+.sbar{height:calc(48px + var(–safeT));padding-top:var(–safeT);background:rgba(9,11,18,.95);
+backdrop-filter:blur(20px);display:flex;align-items:flex-end;justify-content:space-between;
+padding:var(–safeT) 16px 10px;flex-shrink:0;border-bottom:1px solid rgba(30,36,56,.6);position:relative;z-index:100}
+.sbar-logo{display:flex;align-items:center;gap:9px}
+.sbar-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(–sig),var(–blue));
+display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 0 14px rgba(0,232,122,.3)}
+.sbar-name{font-size:18px;font-weight:800;letter-spacing:-.5px;color:#fff}
+.sbar-name em{color:var(–sig);font-style:normal}
+.sbar-pill{display:flex;align-items:center;gap:5px;background:var(–card);border:1px solid var(–rim2);
+border-radius:20px;padding:5px 11px;font-size:11px;font-weight:600;color:var(–muted)}
+.sbar-pill.live{border-color:rgba(0,232,122,.3);background:rgba(0,232,122,.08);color:var(–sig)}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(–muted);flex-shrink:0}
+.sdot.on{background:var(–sig);box-shadow:0 0 6px var(–sig);animation:blink 1.4s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+/* PAGES */
+.pages{flex:1;overflow:hidden;position:relative;z-index:1}
+.page{position:absolute;inset:0;overflow-y:auto;overflow-x:hidden;padding:16px 16px 90px;display:none;-webkit-overflow-scrolling:touch}
+.page.on{display:block;animation:pgIn .2s ease}
+@keyframes pgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.page::-webkit-scrollbar{display:none}
+
+/* BOTTOM NAV */
+.botnav{height:calc(60px + var(–safeB));padding-bottom:var(–safeB);padding-top:6px;
+background:rgba(13,16,32,.97);backdrop-filter:blur(24px);border-top:1px solid var(–rim);
+display:flex;align-items:flex-start;justify-content:space-around;flex-shrink:0;position:relative;z-index:100}
+.bnb{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:4px 2px;
+background:none;border:none;cursor:pointer;color:var(–muted);transition:color .15s;position:relative}
+.bnb.on{color:var(–sig)}
+.bnb .ico{font-size:20px;line-height:1;transition:transform .15s}
+.bnb.on .ico{transform:scale(1.12)}
+.bnb .lbl{font-size:9px;font-weight:700;letter-spacing:.2px}
+.nbadge{position:absolute;top:0;right:calc(50% - 18px);background:var(–rose);color:#fff;
+font-size:9px;font-weight:800;width:15px;height:15px;border-radius:50%;
+display:flex;align-items:center;justify-content:center;border:2px solid var(–bg);font-family:‘JetBrains Mono’,monospace}
+.nbadge.h{display:none}
+
+/* TYPOGRAPHY */
+.pg-title{font-size:22px;font-weight:800;letter-spacing:-.5px;color:#fff;margin-bottom:3px}
+.pg-sub{font-size:12px;color:var(–muted)}
+.pg-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px}
+.ctitle{font-size:11px;font-family:‘JetBrains Mono’,monospace;letter-spacing:2px;text-transform:uppercase;
+color:var(–sig);display:flex;align-items:center;gap:6px}
+.ctitle::before{content:’’;display:inline-block;width:3px;height:11px;background:var(–sig);border-radius:2px}
+
+/* KPI GRID */
+.kgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.kcard{background:var(–card);border:1px solid var(–rim);border-radius:14px;padding:14px;position:relative;overflow:hidden}
+.kline{position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0}
+.klabel{font-size:10px;font-family:‘JetBrains Mono’,monospace;color:var(–muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.kval{font-size:30px;font-weight:800;line-height:1;letter-spacing:-1px}
+.kv-sig{color:var(–sig)}.kv-amber{color:var(–amber)}.kv-blue{color:var(–blue2)}.kv-violet{color:var(–violet)}
+.kmeta{font-size:11px;color:var(–muted);margin-top:4px}
+
+/* CARDS */
+.card{background:var(–card);border:1px solid var(–rim);border-radius:16px;padding:16px;margin-bottom:12px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:12px 18px;border-radius:12px;
+border:none;font-family:‘Plus Jakarta Sans’,sans-serif;font-weight:700;font-size:14px;cursor:pointer;
+transition:all .15s;white-space:nowrap;-webkit-user-select:none}
+.btn:active{transform:scale(.97)}
+.btn-sig{background:var(–sig);color:#000}
+.btn-blue{background:var(–blue);color:#fff}
+.btn-amber{background:var(–amber);color:#000}
+.btn-ghost{background:transparent;border:1px solid var(–rim2);color:var(–muted)}
+.btn-ghost:active{border-color:var(–sig);color:var(–sig)}
+.btn-rose{background:rgba(245,54,92,.12);border:1px solid rgba(245,54,92,.3);color:var(–rose2)}
+.btn-full{width:100%;border-radius:14px;padding:14px}
+.btn-sm{padding:8px 14px;font-size:13px;border-radius:10px}
+.btn-xs{padding:6px 10px;font-size:11px;border-radius:8px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* FORM */
+.field{margin-bottom:12px}
+.field label{display:block;font-size:10px;font-family:‘JetBrains Mono’,monospace;color:var(–muted);
+margin-bottom:5px;letter-spacing:.5px;text-transform:uppercase}
+.fi{width:100%;background:var(–bg3);border:1px solid var(–rim2);border-radius:11px;color:var(–text);
+font-family:‘Plus Jakarta Sans’,sans-serif;font-size:15px;padding:12px 14px;outline:none;
+-webkit-appearance:none;appearance:none;transition:border-color .15s}
+.fi:focus{border-color:var(–sig);box-shadow:0 0 0 3px rgba(0,232,122,.1)}
+.fi-sel{background-image:url(“data:image/svg+xml,%3Csvg xmlns=‘http://www.w3.org/2000/svg’ width=‘12’ height=‘8’%3E%3Cpath d=‘M1 1l5 5 5-5’ stroke=’%23485268’ stroke-width=‘1.5’ fill=‘none’ stroke-linecap=‘round’/%3E%3C/svg%3E”);background-repeat:no-repeat;background-position:right 14px center;padding-right:38px}
+.fi-sel option{background:var(–bg2)}
+.fi-ta{resize:none;min-height:80px;line-height:1.5}
+.fr2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* CHIPS */
+.chip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-family:‘JetBrains Mono’,monospace;font-weight:600}
+.chip::before{content:’’;width:5px;height:5px;border-radius:50%}
+.c-new{background:rgba(61,143,248,.12);color:var(–blue2);border:1px solid rgba(61,143,248,.25)}.c-new::before{background:var(–blue2)}
+.c-hot{background:rgba(245,166,35,.12);color:var(–amber);border:1px solid rgba(245,166,35,.25)}.c-hot::before{background:var(–amber);animation:blink .8s infinite}
+.c-appt{background:rgba(0,232,122,.1);color:var(–sig);border:1px solid rgba(0,232,122,.25)}.c-appt::before{background:var(–sig)}
+.c-cold{background:rgba(72,82,104,.15);color:var(–muted);border:1px solid rgba(72,82,104,.3)}.c-cold::before{background:var(–muted)}
+.c-aged{background:rgba(124,92,252,.1);color:var(–violet);border:1px solid rgba(124,92,252,.25)}.c-aged::before{background:var(–violet)}
+.c-sent{background:rgba(0,232,122,.08);color:var(–sig2);border:1px solid rgba(0,232,122,.2)}.c-sent::before{background:var(–sig2)}
+.c-failed{background:rgba(245,54,92,.1);color:var(–rose2);border:1px solid rgba(245,54,92,.25)}.c-failed::before{background:var(–rose2)}
+.ttag{display:inline-block;padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;font-family:‘JetBrains Mono’,monospace}
+.tt-wk{background:rgba(124,92,252,.15);color:#b39dff;border:1px solid rgba(124,92,252,.25)}
+.tt-fe{background:rgba(0,232,122,.12);color:var(–sig);border:1px solid rgba(0,232,122,.25)}
+.tt-mp{background:rgba(245,166,35,.12);color:var(–amber);border:1px solid rgba(245,166,35,.25)}
+.tt-med{background:rgba(61,143,248,.12);color:var(–blue2);border:1px solid rgba(61,143,248,.25)}
+.tt-term{background:rgba(245,54,92,.1);color:var(–rose2);border:1px solid rgba(245,54,92,.25)}
+.tt-oth{background:rgba(72,82,104,.15);color:var(–muted);border:1px solid rgba(72,82,104,.3)}
+
+/* LEAD ROW */
+.lrow{display:flex;align-items:center;gap:12px;background:var(–card);border:1px solid var(–rim);
+border-radius:14px;padding:13px 14px;margin-bottom:9px;cursor:pointer;transition:all .15s;-webkit-user-select:none}
+.lrow:active{transform:scale(.98);background:var(–card2)}
+.lrow.sel{border-color:var(–sig);background:rgba(0,232,122,.04)}
+.lava{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;border:2px solid}
+.linfo{flex:1;min-width:0}
+.lname{font-size:15px;font-weight:700;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lmeta{font-size:12px;color:var(–muted)}
+.lright{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.lscore{font-size:14px;font-weight:800;font-family:‘JetBrains Mono’,monospace}
+
+/* AI CHAT */
+.chat-hd{background:linear-gradient(135deg,rgba(0,232,122,.08),rgba(61,143,248,.06));
+border:1px solid rgba(0,232,122,.18);border-radius:16px;padding:14px;
+display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.ai-ava{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,var(–sig),var(–blue));
+display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 16px rgba(0,232,122,.3)}
+.ai-info{flex:1}.ai-info .an{font-size:15px;font-weight:800;color:#fff;margin-bottom:2px}
+.ai-info .ad{font-size:11px;color:var(–muted)}
+.ai-live{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:700;flex-shrink:0}
+
+.msgs{display:flex;flex-direction:column;gap:8px;margin-bottom:10px;min-height:140px;max-height:260px;overflow-y:auto;padding:2px 0}
+.msgs::-webkit-scrollbar{display:none}
+.msg{display:flex;gap:8px;animation:msgIn .2s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.msg-l{justify-content:flex-end}.msg-a{justify-content:flex-start}
+.mbub{max-width:82%;padding:10px 13px;border-radius:16px;font-size:14px;line-height:1.55}
+.msg-l .mbub{background:var(–blue);color:#fff;border-radius:16px 16px 4px 16px}
+.msg-a .mbub{background:var(–card2);border:1px solid var(–rim2);border-radius:16px 16px 16px 4px}
+.mmeta{font-size:10px;color:var(–muted);margin-top:2px;font-family:‘JetBrains Mono’,monospace}
+.msg-l .mmeta{text-align:right}
+.typing{display:inline-flex;gap:4px;align-items:center;background:var(–card2);border:1px solid var(–rim2);padding:10px 13px;border-radius:16px 16px 16px 4px;margin-bottom:8px}
+.td{width:7px;height:7px;border-radius:50%;background:var(–muted)}
+.td:nth-child(1){animation:td .9s infinite 0s}.td:nth-child(2){animation:td .9s infinite .2s}.td:nth-child(3){animation:td .9s infinite .4s}
+@keyframes td{0%,80%,100%{transform:scale(.7);opacity:.4}40%{transform:scale(1);opacity:1}}
+.qbtns{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:10px}
+.qbtn{background:var(–card);border:1px solid var(–rim2);color:var(–text2);font-size:11px;font-weight:600;
+padding:7px 11px;border-radius:20px;cursor:pointer;-webkit-user-select:none;white-space:nowrap;
+font-family:‘Plus Jakarta Sans’,sans-serif;transition:all .14s}
+.qbtn:active{border-color:var(–sig);color:var(–sig)}
+.cin-row{display:flex;gap:8px;align-items:flex-end}
+.cin{flex:1;background:var(–card);border:1px solid var(–rim2);border-radius:12px;color:var(–text);
+font-family:‘Plus Jakarta Sans’,sans-serif;font-size:14px;padding:11px 13px;outline:none;
+resize:none;height:44px;-webkit-appearance:none;transition:border-color .15s;line-height:1.4}
+.cin:focus{border-color:var(–sig)}
+
+/* PROGRESS */
+.prog{background:var(–rim);border-radius:6px;height:6px;overflow:hidden}
+.prog-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(–sig),var(–blue));transition:width .35s;box-shadow:0 0 8px rgba(0,232,122,.4)}
+
+/* BLAST PANEL */
+.bpanel{background:linear-gradient(135deg,rgba(0,232,122,.08),rgba(61,143,248,.05));
+border:1px solid rgba(0,232,122,.2);border-radius:16px;padding:16px;margin-bottom:14px}
+.bstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px}
+.bsv{font-size:26px;font-weight:800;letter-spacing:-1px;line-height:1}
+.bsl{font-size:10px;font-family:‘JetBrains Mono’,monospace;color:var(–muted);letter-spacing:1px;text-transform:uppercase;margin-top:3px}
+
+/* APPT CARD */
+.apcard{background:var(–card);border:1px solid var(–rim);border-radius:14px;padding:13px 14px;margin-bottom:9px;display:flex;align-items:center;gap:12px}
+.aptime{background:var(–bg3);border:1px solid var(–rim2);border-radius:10px;padding:8px 10px;text-align:center;flex-shrink:0;min-width:56px}
+.apday{font-size:9px;font-family:‘JetBrains Mono’,monospace;color:var(–muted);letter-spacing:1px;text-transform:uppercase}
+.aphr{font-size:17px;font-weight:800;color:var(–amber);line-height:1.1;letter-spacing:-.5px}
+.apinfo{flex:1;min-width:0}
+.apname{font-size:14px;font-weight:700;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.apdet{font-size:11px;color:var(–muted)}
+
+/* COMP ITEM */
+.citem{display:flex;align-items:center;gap:12px;background:var(–card);border:1px solid var(–rim);border-radius:13px;padding:13px 14px;margin-bottom:9px}
+.cico{font-size:18px;width:26px;text-align:center;flex-shrink:0}
+.cinfo{flex:1}.ctit{font-size:14px;font-weight:700;margin-bottom:2px}.cdesc{font-size:11px;color:var(–muted);line-height:1.4}
+.cst{font-size:11px;font-family:‘JetBrains Mono’,monospace;font-weight:700;flex-shrink:0}
+
+/* NOTICE */
+.notice{border-radius:12px;padding:12px 14px;font-size:13px;line-height:1.6;margin-bottom:12px}
+.n-sig{background:rgba(0,232,122,.07);border:1px solid rgba(0,232,122,.2)}
+.n-amb{background:rgba(245,166,35,.07);border:1px solid rgba(245,166,35,.2)}
+.n-blue{background:rgba(61,143,248,.07);border:1px solid rgba(61,143,248,.2)}
+.n-rose{background:rgba(245,54,92,.07);border:1px solid rgba(245,54,92,.2)}
+
+/* MISC */
+.empty{text-align:center;padding:36px 20px}
+.empty-ico{font-size:38px;opacity:.3;margin-bottom:10px}
+.empty p{color:var(–muted);font-size:14px}
+.dz{border:2px dashed var(–rim2);border-radius:14px;padding:22px;text-align:center;cursor:pointer;transition:border-color .15s;margin-bottom:12px}
+.dz:active{border-color:var(–sig)}
+.dz input{display:none}
+.tabs{display:flex;gap:6px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:8px 14px;border-radius:20px;font-size:13px;font-weight:600;border:1px solid var(–rim2);
+background:transparent;color:var(–muted);cursor:pointer;white-space:nowrap;-webkit-user-select:none;transition:all .14s}
+.tab.on{background:var(–sigD);border-color:rgba(0,232,122,.3);color:var(–sig)}
+.sep{border:none;border-top:1px solid var(–rim);margin:14px 0}
+.mini3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px;margin-bottom:14px}
+.minicard{background:var(–card);border:1px solid var(–rim);border-radius:12px;padding:12px;text-align:center}
+.miniv{font-size:24px;font-weight:800;line-height:1}
+.minil{font-size:10px;font-family:‘JetBrains Mono’,monospace;color:var(–muted);margin-top:3px;text-transform:uppercase;letter-spacing:1px}
+
+/* SHEET */
+.sheet-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);backdrop-filter:blur(4px);z-index:200;display:none;align-items:flex-end}
+.sheet-bg.open{display:flex;animation:bgIn .18s ease}
+@keyframes bgIn{from{opacity:0}to{opacity:1}}
+.sheet{background:var(–bg2);border-top:1px solid var(–rim2);border-radius:20px 20px 0 0;
+padding:0 16px calc(16px + var(–safeB));width:100%;max-height:92vh;overflow-y:auto;
+animation:shUp .26s cubic-bezier(.34,1.2,.64,1)}
+@keyframes shUp{from{transform:translateY(100%)}to{transform:none}}
+.sh-handle{width:36px;height:4px;background:var(–rim2);border-radius:2px;margin:12px auto 16px}
+.sh-title{font-size:18px;font-weight:800;margin-bottom:16px;color:#fff;letter-spacing:-.3px}
+
+/* TOAST */
+.toast{position:fixed;bottom:calc(76px + var(–safeB));left:16px;right:16px;z-index:300;
+background:var(–card2);border:1px solid var(–rim2);border-radius:14px;padding:13px 16px;
+font-size:14px;font-weight:600;box-shadow:0 8px 32px rgba(0,0,0,.6);
+transform:translateY(20px);opacity:0;transition:all .3s cubic-bezier(.34,1.4,.64,1)}
+.toast.show{transform:translateY(0);opacity:1}
+</style>
+
+</head>
+<body>
+<div class="amb"></div>
+
+<!-- STATUS BAR -->
+
+<div class="sbar">
+  <div class="sbar-logo">
+    <div class="sbar-mark">📲</div>
+    <div class="sbar-name">Lead<em>Ping</em></div>
+  </div>
+  <div class="sbar-pill" id="gspill"><span class="sdot" id="gsdot"></span><span id="gstxt">Idle</span></div>
+</div>
+
+<!-- PAGES -->
+
+<div class="pages">
+
+<!-- HOME -->
+
+<div class="page on" id="pg-home">
+  <div class="pg-hd">
+    <div><div class="pg-title">Command Center</div><div class="pg-sub">Insurance Lead OS</div></div>
+    <button class="btn btn-sig btn-sm" onclick="goTab('ai')">🤖 AI</button>
+  </div>
+  <div class="kgrid">
+    <div class="kcard"><div class="kline" style="background:linear-gradient(90deg,var(--sig),var(--blue))"></div><div class="klabel">Total Leads</div><div class="kval kv-sig" id="k-total">0</div><div class="kmeta">in pipeline</div></div>
+    <div class="kcard"><div class="kline" style="background:linear-gradient(90deg,var(--amber),var(--amber2))"></div><div class="klabel">Appointments</div><div class="kval kv-amber" id="k-appts">0</div><div class="kmeta">AI booked</div></div>
+    <div class="kcard"><div class="kline" style="background:linear-gradient(90deg,var(--blue),var(--blue2))"></div><div class="klabel">Texts Sent</div><div class="kval kv-blue" id="k-texts">0</div><div class="kmeta">this session</div></div>
+    <div class="kcard"><div class="kline" style="background:linear-gradient(90deg,var(--violet),#b39dff)"></div><div class="klabel">Avg Score</div><div class="kval kv-violet" id="k-score">--</div><div class="kmeta">lead quality</div></div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">Quick Launch</div></div>
+    <div class="fr2">
+      <button class="btn btn-sig btn-full" onclick="goTab('ai')">🤖 AI Booker</button>
+      <button class="btn btn-blue btn-full" onclick="goTab('blast')">🚀 Blast</button>
+      <button class="btn btn-ghost btn-full" onclick="openSheet('sh-add')">➕ Add Lead</button>
+      <button class="btn btn-ghost btn-full" onclick="goTab('leads')">👥 Leads</button>
+    </div>
+  </div>
+  <hr class="sep">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="ctitle">Live Activity</div>
+    <button class="btn btn-ghost btn-xs" onclick="S.feed=[];renderFeed()">Clear</button>
+  </div>
+  <div id="feed-el"><div class="empty"><div class="empty-ico">📡</div><p>AI is standing by</p></div></div>
+  <hr class="sep">
+  <div class="ctitle" style="margin-bottom:10px">Today's Appointments</div>
+  <div id="home-appts-el"><div class="empty" style="padding:16px 0"><div class="empty-ico" style="font-size:26px">📅</div><p>No appointments yet</p></div></div>
+</div>
+
+<!-- LEADS -->
+
+<div class="page" id="pg-leads">
+  <div class="pg-hd">
+    <div><div class="pg-title">Lead Pipeline</div><div class="pg-sub" id="leads-sub">0 leads</div></div>
+    <button class="btn btn-sig btn-sm" onclick="openSheet('sh-add')">+ Add</button>
+  </div>
+  <div class="tabs" id="lead-tabs">
+    <div class="tab on" onclick="setLTab('all',this)">All</div>
+    <div class="tab" onclick="setLTab('aged',this)">Aged</div>
+    <div class="tab" onclick="setLTab('hot',this)">Hot</div>
+    <div class="tab" onclick="setLTab('new',this)">New</div>
+    <div class="tab" onclick="setLTab('appointment',this)">Booked</div>
+  </div>
+  <input id="lsearch" oninput="renderLeads()" placeholder="Search name or phone..." class="fi" style="margin-bottom:12px;width:100%">
+  <label class="dz" for="csv-in">
+    <input type="file" id="csv-in" accept=".csv" onchange="importCSV(event)">
+    <div style="font-size:26px;margin-bottom:6px">📂</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">Import CSV</div>
+    <div style="font-size:12px;color:var(--muted)">first_name, last_name, phone, lead_type, age</div>
+  </label>
+  <div id="leads-el"><div class="empty"><div class="empty-ico">👥</div><p>No leads yet</p></div></div>
+</div>
+
+<!-- AI BOOKER -->
+
+<div class="page" id="pg-ai">
+  <div class="pg-hd">
+    <div><div class="pg-title">AI Booker</div><div class="pg-sub">Powered by Claude</div></div>
+    <button class="btn btn-ghost btn-xs" onclick="autoPickLead()">⚡ Auto</button>
+  </div>
+  <div id="ai-lead-preview"><div class="notice n-amb">👆 Select a lead below to start an AI conversation</div></div>
+  <div class="chat-hd">
+    <div class="ai-ava">🤖</div>
+    <div class="ai-info"><div class="an">LeadPing AI</div><div class="ad">Handles objections · Books appointments</div></div>
+    <div class="ai-live"><span class="sdot" id="ai-dot" style="background:var(--muted)"></span><span id="ai-stxt" style="font-size:11px;color:var(--muted)">Standby</span></div>
+  </div>
+  <div class="notice n-blue" style="font-size:12px" id="ai-key-notice">🤖 Add your <strong>Anthropic API key</strong> in Settings to activate real AI responses.</div>
+  <div class="msgs" id="msgs-el"></div>
+  <div id="typing-el" style="display:none"><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>
+  <div class="qbtns">
+    <div class="qbtn" onclick="qr('How much does it cost?')">💬 Cost?</div>
+    <div class="qbtn" onclick="qr('I already have insurance')">💬 Already insured</div>
+    <div class="qbtn" onclick="qr('I need to think about it')">💬 Need time</div>
+    <div class="qbtn" onclick="qr('Not interested')">💬 Not interested</div>
+    <div class="qbtn" onclick="qr('Can we schedule a call?')">📅 Schedule</div>
+  </div>
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <button class="btn btn-sig btn-sm" onclick="aiStart()" style="flex:1">🤖 AI Start Convo</button>
+    <button class="btn btn-ghost btn-sm" onclick="clearChat()">Clear</button>
+  </div>
+  <div class="cin-row">
+    <textarea class="cin" id="cin" placeholder="Simulate lead reply..."></textarea>
+    <button class="btn btn-sig btn-sm" onclick="sendChat()" style="height:44px;padding:0 14px">↑</button>
+  </div>
+  <hr class="sep">
+  <div class="ctitle" style="margin-bottom:10px">Select Lead</div>
+  <div id="ai-leads-el"><div class="empty" style="padding:20px 0"><div class="empty-ico">👥</div><p>No leads loaded yet</p></div></div>
+</div>
+
+<!-- BLAST -->
+
+<div class="page" id="pg-blast">
+  <div class="pg-hd"><div><div class="pg-title">Blast Campaign</div><div class="pg-sub">Aged lead revival</div></div></div>
+  <div class="bpanel">
+    <div class="bstats">
+      <div style="text-align:center"><div class="bsv kv-sig" id="bc-t">0</div><div class="bsl">Total</div></div>
+      <div style="text-align:center"><div class="bsv" style="color:var(--amber2)" id="bc-p">0</div><div class="bsl">Pending</div></div>
+      <div style="text-align:center"><div class="bsv" style="color:var(--sig2)" id="bc-s">0</div><div class="bsl">Sent</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-bottom:6px">
+      <span id="blast-lbl">Ready to send</span><span id="blast-pct">0%</span>
+    </div>
+    <div class="prog"><div class="prog-fill" id="blast-bar" style="width:0%"></div></div>
+    <div style="display:flex;gap:9px;margin-top:14px">
+      <button class="btn btn-ghost btn-sm" id="btn-pause" onclick="togglePause()" style="display:none">⏸</button>
+      <button class="btn btn-rose btn-sm" id="btn-stop" onclick="stopBlast()" style="display:none">⏹ Stop</button>
+      <button class="btn btn-sig btn-full" id="btn-go" onclick="startBlast()" style="flex:1">🚀 SEND BLAST</button>
+    </div>
+  </div>
+  <div class="notice n-sig" style="font-size:12px">⚡ Parallel batch sending handles <strong>1,000+ texts</strong>. Batch 10 + 2s delay = ~1,000 in 17 min.</div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">Settings</div></div>
+    <div class="field"><label>Lead Type Filter</label>
+      <select id="b-type" class="fi fi-sel">
+        <option value="">All Types</option>
+        <option value="will_kit">Will Kit</option>
+        <option value="final_expense">Final Expense</option>
+        <option value="mortgage_protection">Mortgage Protection</option>
+        <option value="medicare">Medicare</option>
+        <option value="term">Term Life</option>
+        <option value="iul">IUL</option>
+        <option value="annuity">Annuity</option>
+      </select>
+    </div>
+    <div class="fr2">
+      <div class="field" style="margin:0"><label>Batch Size</label><input type="number" id="b-batch" value="10" min="1" max="50" class="fi"></div>
+      <div class="field" style="margin:0"><label>Delay (sec)</label><input type="number" id="b-delay" value="2" min="0" max="60" step="0.5" class="fi"></div>
+    </div>
+  </div>
+  <div class="card"><div class="card-hd"><div class="ctitle">Templates</div></div><div id="camp-el"></div></div>
+</div>
+
+<!-- APPOINTMENTS -->
+
+<div class="page" id="pg-appts">
+  <div class="pg-hd">
+    <div><div class="pg-title">Appointments</div><div class="pg-sub" id="appts-sub">0 booked</div></div>
+    <button class="btn btn-sig btn-sm" onclick="openSheet('sh-book')">+ Book</button>
+  </div>
+  <div class="mini3">
+    <div class="minicard"><div class="miniv kv-sig" id="ap-t">0</div><div class="minil">Total</div></div>
+    <div class="minicard"><div class="miniv kv-amber" id="ap-td">0</div><div class="minil">Today</div></div>
+    <div class="minicard"><div class="miniv kv-blue" id="ap-up">0</div><div class="minil">Upcoming</div></div>
+  </div>
+  <div id="appts-el"><div class="empty"><div class="empty-ico">📅</div><p>No appointments yet.<br>AI books these automatically.</p></div></div>
+</div>
+
+<!-- SETTINGS -->
+
+<div class="page" id="pg-settings">
+  <div class="pg-hd"><div><div class="pg-title">Settings</div></div></div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">AI Engine (Claude)</div></div>
+    <div class="notice n-sig" style="font-size:12px">Get a free API key at <strong>console.anthropic.com</strong>. Required for the AI Appointment Booker.</div>
+    <div class="field"><label>Anthropic API Key</label><input type="password" id="s-ant" placeholder="sk-ant-..." class="fi"></div>
+    <button class="btn btn-sig btn-full" onclick="saveSettings()">Save &amp; Activate AI</button>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">Kixie SMS</div></div>
+    <div class="notice n-blue" style="font-size:12px">API must be activated by Kixie support. Email <strong>support@kixie.com</strong>.</div>
+    <div class="field"><label>API Key</label><input type="password" id="s-kix" placeholder="Your Kixie API key" class="fi"></div>
+    <div class="field"><label>Business ID</label><input id="s-biz" placeholder="12345" class="fi"></div>
+    <div class="field"><label>Agent Email</label><input type="email" id="s-email" placeholder="you@domain.com" class="fi"></div>
+    <div class="field"><label>From Number (optional)</label><input id="s-from" type="tel" placeholder="15550001234" class="fi"></div>
+    <button class="btn btn-blue btn-full" onclick="saveSettings()">Save Kixie Settings</button>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">Agent Profile</div></div>
+    <div class="field"><label>Your Name</label><input id="s-agent" value="Michael" class="fi"></div>
+    <div class="field"><label>Company</label><input id="s-company" value="Heritage Planning Group" class="fi"></div>
+    <div class="field"><label>Calendar / Booking Link</label><input id="s-cal" placeholder="https://calendly.com/..." class="fi"></div>
+    <button class="btn btn-ghost btn-full" onclick="saveSettings()">Save Profile</button>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">Test Send</div></div>
+    <div class="field"><label>Test Phone Number</label><input type="tel" id="s-test" placeholder="+15550001234" class="fi"></div>
+    <div class="field"><label>Lead Type</label>
+      <select id="s-test-type" class="fi fi-sel">
+        <option value="will_kit">Will Kit</option>
+        <option value="final_expense">Final Expense</option>
+        <option value="mortgage_protection">Mortgage Protection</option>
+        <option value="medicare">Medicare</option>
+      </select>
+    </div>
+    <button class="btn btn-ghost btn-full" onclick="testSend()">Send Test SMS</button>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="ctitle">Compliance</div></div>
+    <div class="citem"><div class="cico">⏰</div><div class="cinfo"><div class="ctit">Quiet Hours</div><div class="cdesc">No texts before 8AM or after 9PM</div></div><div class="cst" style="color:var(--sig)">ON</div></div>
+    <div class="citem"><div class="cico">🚫</div><div class="cinfo"><div class="ctit">DNC Protection</div><div class="cdesc">STOP replies auto-block number</div></div><div class="cst" style="color:var(--sig)">ON</div></div>
+    <div class="citem"><div class="cico">📝</div><div class="cinfo"><div class="ctit">Message Logging</div><div class="cdesc">All texts logged with timestamp</div></div><div class="cst" style="color:var(--sig)">ON</div></div>
+    <div class="notice n-rose" style="font-size:11px;margin-bottom:0">You are responsible for TCPA compliance. Ensure proper consent before texting leads.</div>
+  </div>
+</div>
+
+</div><!-- /pages -->
+
+<!-- BOTTOM NAV -->
+
+<nav class="botnav">
+  <button class="bnb on" id="btn-home" onclick="goTab('home')"><span class="ico">⚡</span><span class="lbl">Home</span></button>
+  <button class="bnb" id="btn-leads" onclick="goTab('leads')"><span class="ico">👥</span><span class="lbl">Leads</span><span class="nbadge h" id="nb-leads">0</span></button>
+  <button class="bnb" id="btn-ai" onclick="goTab('ai')"><span class="ico">🤖</span><span class="lbl">AI</span></button>
+  <button class="bnb" id="btn-blast" onclick="goTab('blast')"><span class="ico">🚀</span><span class="lbl">Blast</span></button>
+  <button class="bnb" id="btn-appts" onclick="goTab('appts')"><span class="ico">📅</span><span class="lbl">Appts</span><span class="nbadge h" id="nb-appts">0</span></button>
+  <button class="bnb" id="btn-settings" onclick="goTab('settings')"><span class="ico">⚙️</span><span class="lbl">Settings</span></button>
+</nav>
+
+<!-- SHEETS -->
+
+<div class="sheet-bg" id="sh-add" onclick="if(event.target===this)closeSheet('sh-add')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Add Lead</div>
+    <div class="fr2" style="margin-bottom:12px">
+      <div class="field" style="margin:0"><label>First Name</label><input id="al-fn" placeholder="John" class="fi"></div>
+      <div class="field" style="margin:0"><label>Last Name</label><input id="al-ln" placeholder="Smith" class="fi"></div>
+    </div>
+    <div class="field"><label>Phone Number</label><input id="al-ph" type="tel" placeholder="+15550001234" class="fi"></div>
+    <div class="fr2" style="margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Lead Type</label>
+        <select id="al-ty" class="fi fi-sel">
+          <option value="will_kit">Will Kit</option>
+          <option value="final_expense">Final Expense</option>
+          <option value="mortgage_protection">Mortgage Protection</option>
+          <option value="medicare">Medicare</option>
+          <option value="term">Term Life</option>
+          <option value="iul">IUL</option>
+          <option value="annuity">Annuity</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="field" style="margin:0"><label>Age (optional)</label><input id="al-age" type="number" placeholder="55" class="fi"></div>
+    </div>
+    <button class="btn btn-sig btn-full" style="margin-bottom:9px" onclick="addLead()">+ Add Lead</button>
+    <button class="btn btn-ghost btn-full" onclick="loadDemo()">Load 10 Demo Leads</button>
+  </div>
+</div>
+
+<div class="sheet-bg" id="sh-book" onclick="if(event.target===this)closeSheet('sh-book')">
+  <div class="sheet">
+    <div class="sh-handle"></div>
+    <div class="sh-title">Book Appointment</div>
+    <div class="fr2" style="margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Name</label><input id="bk-name" placeholder="John Smith" class="fi"></div>
+      <div class="field" style="margin:0"><label>Phone</label><input id="bk-ph" type="tel" placeholder="+15550001234" class="fi"></div>
+    </div>
+    <div class="fr2" style="margin-bottom:12px">
+      <div class="field" style="margin:0"><label>Date</label><input id="bk-date" type="date" class="fi"></div>
+      <div class="field" style="margin:0"><label>Time</label><input id="bk-time" type="time" value="10:00" class="fi"></div>
+    </div>
+    <div class="field"><label>Lead Type</label>
+      <select id="bk-type" class="fi fi-sel">
+        <option value="will_kit">Will Kit</option>
+        <option value="final_expense">Final Expense</option>
+        <option value="mortgage_protection">Mortgage Protection</option>
+        <option value="medicare">Medicare</option>
+        <option value="term">Term Life</option>
+      </select>
+    </div>
+    <button class="btn btn-sig btn-full" style="margin-bottom:9px" onclick="bookAppt()">Book &amp; Confirm</button>
+    <button class="btn btn-ghost btn-full" onclick="closeSheet('sh-book')">Cancel</button>
+  </div>
+</div>
+
+<div class="toast" id="toast-el"></div>
+
+<script>
+var S={leads:[],appts:[],dncList:[],feed:[],sent:0,failed:0,activeLead:null,isBlasting:false,stopF:false,pauseF:false,ltab:'all'};
+
+var TY={
+  will_kit:{label:'Will Kit',icon:'📋',cls:'tt-wk',sc:70},
+  final_expense:{label:'Final Expense',icon:'💙',cls:'tt-fe',sc:85},
+  mortgage_protection:{label:'Mortgage Protection',icon:'🏠',cls:'tt-mp',sc:80},
+  medicare:{label:'Medicare',icon:'📋',cls:'tt-med',sc:75},
+  term:{label:'Term Life',icon:'☎',cls:'tt-term',sc:65},
+  iul:{label:'IUL',icon:'📈',cls:'tt-oth',sc:60},
+  annuity:{label:'Annuity',icon:'💰',cls:'tt-oth',sc:60},
+  other:{label:'Other',icon:'💬',cls:'tt-oth',sc:50}
+};
+
+var TPL={
+  will_kit:'Hi {fn}! This is {ag} with {co}. You requested a Will Kit a while back and I never got to connect. I would love to help protect your family - can we chat 5 minutes?',
+  final_expense:'Hi {fn}, it is {ag} from {co}. You inquired about final expense coverage and I never caught up with you. Can we chat 5 min to make sure your family is protected?',
+  mortgage_protection:'Hey {fn}! {ag} with {co} - is your mortgage protected if something happened to you? You requested info before. Quick 5-min call?',
+  medicare:'Hi {fn}, {ag} with {co}. You asked about Medicare options - many people qualify for $0 premium plans! Can I give you a quick call?',
+  term:'Hey {fn}! {ag} from {co}. You looked into term life before. Rates are great right now - quick call this week?',
+  iul:'Hi {fn}! {ag} here - you expressed interest in an IUL policy. Tax-free growth AND family protection. Can we chat 10 min?',
+  annuity:'Hi {fn}, {ag} with {co}. You inquired about annuities - great guaranteed income rates now. Worth a quick chat?',
+  other:'Hi {fn}, this is {ag} with {co}. You previously inquired about life insurance and I never reached you. Still interested in coverage options?'
+};
+
+window.onload = function() {
+  loadSettings();
+  var d = document.getElementById('bk-date');
+  if (d) d.valueAsDate = new Date();
+  renderCamp();
+  updateKPIs();
+  initChat();
+};
+
+function goTab(tab) {
+  var pages = document.querySelectorAll('.page');
+  for (var i=0;i<pages.length;i++) pages[i].classList.remove('on');
+  var btns = document.querySelectorAll('.bnb');
+  for (var i=0;i<btns.length;i++) btns[i].classList.remove('on');
+  var pg = document.getElementById('pg-'+tab);
+  if (pg) pg.classList.add('on');
+  var btn = document.getElementById('btn-'+tab);
+  if (btn) btn.classList.add('on');
+  if (tab==='leads') renderLeads();
+  if (tab==='ai') { renderAILeads(); renderAIPreview(); }
+  if (tab==='blast') updateBlastStats();
+  if (tab==='appts') renderAppts();
+  if (tab==='home') { renderFeed(); renderHomeAppts(); }
+}
+
+function calcScore(type, age, status) {
+  var s = (TY[type] ? TY[type].sc : 50);
+  if (age>=45 && age<=70) s+=12; else if (age>70) s+=6;
+  if (status==='new') s+=8;
+  if (status==='hot') s+=20;
+  if (status==='appointment') s=95;
+  if (status==='cold') s-=20;
+  if (status==='aged') s-=10;
+  return Math.min(100, Math.max(0, s));
+}
+
+function scColor(s) {
+  return s>=75 ? 'var(--sig)' : s>=50 ? 'var(--amber)' : 'var(--rose2)';
+}
+
+function addLead() {
+  var fn=gv('al-fn'), ln=gv('al-ln'), ph=gv('al-ph');
+  var ty=gsel('al-ty'), age=parseInt(gv('al-age'))||0;
+  if (!fn||!ph) { toast('Name and phone required'); return; }
+  var sc = calcScore(ty, age, 'new');
+  S.leads.push({id:uid(),fname:fn,lname:ln,phone:ph,type:ty,age:age,status:'new',score:sc,ts:''});
+  sv('al-fn',''); sv('al-ln',''); sv('al-ph',''); sv('al-age','');
+  closeSheet('sh-add');
+  updateKPIs(); renderLeads(); renderAILeads();
+  addFeed('info','New lead: '+fn+' '+ln+' ('+( TY[ty]?TY[ty].label:ty)+')');
+  toast('Added: '+fn+' - Score: '+sc);
+}
+
+function loadDemo() {
+  var demos=[
+    {fn:'Robert',ln:'Johnson',ph:'+15550010001',ty:'will_kit',age:62},
+    {fn:'Linda',ln:'Williams',ph:'+15550010002',ty:'final_expense',age:67},
+    {fn:'James',ln:'Brown',ph:'+15550010003',ty:'mortgage_protection',age:48},
+    {fn:'Patricia',ln:'Jones',ph:'+15550010004',ty:'medicare',age:65},
+    {fn:'Michael',ln:'Davis',ph:'+15550010005',ty:'term',age:41},
+    {fn:'Barbara',ln:'Miller',ph:'+15550010006',ty:'final_expense',age:71},
+    {fn:'William',ln:'Wilson',ph:'+15550010007',ty:'iul',age:38},
+    {fn:'Elizabeth',ln:'Moore',ph:'+15550010008',ty:'will_kit',age:58},
+    {fn:'David',ln:'Taylor',ph:'+15550010009',ty:'annuity',age:55},
+    {fn:'Susan',ln:'Anderson',ph:'+15550010010',ty:'final_expense',age:69}
+  ];
+  for (var i=0;i<demos.length;i++) {
+    var d=demos[i], sc=calcScore(d.ty,d.age,'aged');
+    S.leads.push({id:uid(),fname:d.fn,lname:d.ln,phone:d.ph,type:d.ty,age:d.age,status:'aged',score:sc,ts:''});
+  }
+  closeSheet('sh-add');
+  updateKPIs(); renderLeads(); renderAILeads();
+  addFeed('info','10 demo aged leads loaded');
+  toast('10 demo leads loaded');
+}
+
+function importCSV(e) {
+  var file=e.target.files[0]; if (!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev) {
+    var lines=ev.target.result.trim().split('\n').filter(function(l){return l.trim();});
+    var hdr=lines[0].toLowerCase().split(',').map(function(h){return h.trim().replace(/["\r]/g,'');});
+    var fi=hdr.findIndex(function(h){return h.includes('first');}),
+        li=hdr.findIndex(function(h){return h.includes('last');}),
+        pi=hdr.findIndex(function(h){return h.includes('phone');}),
+        ti=hdr.findIndex(function(h){return h.includes('type');}),
+        ai=hdr.findIndex(function(h){return h.includes('age');});
+    if (pi<0) { toast('CSV needs a phone column'); return; }
+    var count=0;
+    for (var i=1;i<lines.length;i++) {
+      var c=lines[i].split(',').map(function(x){return x.trim().replace(/["\r]/g,'');});
+      if (!c[pi]) continue;
+      var ty=ti>=0?normType(c[ti]):'other', age=ai>=0?parseInt(c[ai])||0:0;
+      S.leads.push({id:uid(),fname:fi>=0?c[fi]:'Lead',lname:li>=0?c[li]:'',phone:c[pi],type:ty,age:age,status:'aged',score:calcScore(ty,age,'aged'),ts:''});
+      count++;
+    }
+    updateKPIs(); renderLeads(); renderAILeads();
+    toast('Imported '+count.toLocaleString()+' leads');
+    addFeed('info','CSV: '+count.toLocaleString()+' leads imported');
+  };
+  reader.readAsText(file);
+  e.target.value='';
+}
+
+function normType(raw) {
+  var r=(raw||'').toLowerCase().replace(/[^a-z ]/g,'');
+  if (r.includes('will')||r.includes('kit')) return 'will_kit';
+  if (r.includes('final')||r.includes('fe')) return 'final_expense';
+  if (r.includes('mort')) return 'mortgage_protection';
+  if (r.includes('medi')) return 'medicare';
+  if (r.includes('term')) return 'term';
+  if (r.includes('iul')) return 'iul';
+  if (r.includes('annui')) return 'annuity';
+  return 'other';
+}
+
+function setLTab(tab, el) {
+  S.ltab=tab;
+  var tabs=document.querySelectorAll('#lead-tabs .tab');
+  for (var i=0;i<tabs.length;i++) tabs[i].classList.remove('on');
+  if (el) el.classList.add('on');
+  renderLeads();
+}
+
+function renderLeads() {
+  var q=(gv('lsearch')||'').toLowerCase();
+  var fl=S.leads.filter(function(l){
+    if (S.ltab!=='all' && l.status!==S.ltab) return false;
+    if (q && !(l.fname+' '+l.lname+' '+l.phone).toLowerCase().includes(q)) return false;
+    return true;
+  }).sort(function(a,b){return b.score-a.score;});
+  setText('leads-sub', S.leads.length.toLocaleString()+' leads');
+  var nb=document.getElementById('nb-leads');
+  if (nb) { nb.textContent=S.leads.length; nb.classList.toggle('h',S.leads.length===0); }
+  var el=document.getElementById('leads-el');
+  if (!el) return;
+  if (!fl.length) { el.innerHTML='<div class="empty"><div class="empty-ico">👥</div><p>'+(S.leads.length?'No leads match filter':'No leads yet')+'</p></div>'; return; }
+  var html='';
+  var shown=fl.slice(0,100);
+  for (var i=0;i<shown.length;i++) {
+    var l=shown[i], sc=scColor(l.score), ty=TY[l.type]||TY.other;
+    html+='<div class="lrow" onclick="pickLead(\''+l.id+'\')">'
+      +'<div class="lava" style="background:'+sc+'22;border-color:'+sc+'55;color:'+sc+'">'+l.fname[0]+(l.lname[0]||'')+'</div>'
+      +'<div class="linfo"><div class="lname">'+esc(l.fname)+' '+esc(l.lname)+'</div>'
+      +'<div class="lmeta">'+esc(l.phone)+(l.age?' · '+l.age:'')+'</div></div>'
+      +'<div class="lright"><span class="lscore" style="color:'+sc+'">'+l.score+'</span>'
+      +'<span class="chip c-'+l.status+'">'+l.status+'</span></div></div>';
+  }
+  if (fl.length>100) html+='<div style="text-align:center;padding:10px;font-size:12px;color:var(--muted)">Showing 100 of '+fl.length.toLocaleString()+'</div>';
+  el.innerHTML=html;
+}
+
+function pickLead(id) {
+  S.activeLead=null;
+  for (var i=0;i<S.leads.length;i++) { if (S.leads[i].id===id) { S.activeLead=S.leads[i]; break; } }
+  goTab('ai');
+}
+
+function autoPickLead() {
+  if (!S.leads.length) { toast('No leads loaded'); return; }
+  var sorted=S.leads.slice().sort(function(a,b){return b.score-a.score;});
+  for (var i=0;i<sorted.length;i++) {
+    if (sorted[i].status!=='appointment' && sorted[i].status!=='sent') { S.activeLead=sorted[i]; break; }
+  }
+  renderAIPreview(); renderAILeads();
+  toast('Picked: '+( S.activeLead ? S.activeLead.fname : 'none'));
+}
+
+function renderAIPreview() {
+  var el=document.getElementById('ai-lead-preview');
+  if (!el) return;
+  if (!S.activeLead) { el.innerHTML='<div class="notice n-amb">Select a lead below to start an AI conversation</div>'; return; }
+  var l=S.activeLead, sc=scColor(l.score), ty=TY[l.type]||TY.other;
+  el.innerHTML='<div class="lrow sel" style="cursor:default">'
+    +'<div class="lava" style="background:'+sc+'22;border-color:'+sc+'55;color:'+sc+'">'+l.fname[0]+(l.lname[0]||'')+'</div>'
+    +'<div class="linfo"><div class="lname">'+esc(l.fname)+' '+esc(l.lname)+'</div>'
+    +'<div class="lmeta">'+esc(l.phone)+(l.age?' · Age '+l.age:'')+'</div></div>'
+    +'<div class="lright"><span class="lscore" style="color:'+sc+'">'+l.score+'</span>'
+    +'<span class="ttag '+ty.cls+'">'+ty.label+'</span></div></div>';
+}
+
+function renderAILeads() {
+  var el=document.getElementById('ai-leads-el');
+  if (!el) return;
+  if (!S.leads.length) { el.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-ico">👥</div><p>No leads loaded yet</p></div>'; return; }
+  var sorted=S.leads.slice().sort(function(a,b){return b.score-a.score;}).slice(0,15);
+  var html='';
+  for (var i=0;i<sorted.length;i++) {
+    var l=sorted[i], sc=scColor(l.score), ty=TY[l.type]||TY.other;
+    html+='<div class="lrow'+(S.activeLead&&S.activeLead.id===l.id?' sel':'')+'" onclick="selectLead(\''+l.id+'\')">'
+      +'<div class="lava" style="width:36px;height:36px;background:'+sc+'22;border-color:'+sc+'55;color:'+sc+'">'+l.fname[0]+(l.lname[0]||'')+'</div>'
+      +'<div class="linfo"><div class="lname" style="font-size:14px">'+esc(l.fname)+' '+esc(l.lname)+'</div>'
+      +'<div class="lmeta"><span class="ttag '+ty.cls+'">'+ty.label+'</span></div></div>'
+      +'<div class="lright"><span class="lscore" style="color:'+sc+'">'+l.score+'</span>'
+      +'<span class="chip c-'+l.status+'">'+l.status+'</span></div></div>';
+  }
+  el.innerHTML=html;
+}
+
+function selectLead(id) {
+  for (var i=0;i<S.leads.length;i++) { if (S.leads[i].id===id) { S.activeLead=S.leads[i]; break; } }
+  renderAIPreview(); renderAILeads();
+  clearChat();
+  addAI('Lead loaded: '+S.activeLead.fname+' '+S.activeLead.lname+' - '+(TY[S.activeLead.type]?TY[S.activeLead.type].label:'')+', Score '+S.activeLead.score+'. Tap AI Start Convo to begin!');
+}
+
+function initChat() {
+  var el=document.getElementById('msgs-el');
+  if (!el) return;
+  el.innerHTML='';
+  addAI('Hello! I am your LeadPing AI. Select a lead then tap AI Start Convo and I will craft a personalized re-engagement message and handle any objections to book the appointment.');
+}
+
+function clearChat() {
+  var el=document.getElementById('msgs-el');
+  if (!el) return;
+  el.innerHTML='';
+  if (S.activeLead) addAI('Lead: '+S.activeLead.fname+' '+S.activeLead.lname+' selected. Tap AI Start Convo or simulate a lead reply.');
+}
+
+function addAI(msg) {
+  var el=document.getElementById('msgs-el');
+  if (!el) return;
+  var d=document.createElement('div');
+  d.className='msg msg-a';
+  d.innerHTML='<div><div class="mbub">'+msg.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')+'</div><div class="mmeta">LeadPing AI - '+nowStr()+'</div></div>';
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+}
+
+function addLeadMsg(msg) {
+  var el=document.getElementById('msgs-el');
+  if (!el) return;
+  var d=document.createElement('div');
+  d.className='msg msg-l';
+  d.innerHTML='<div><div class="mbub">'+esc(msg)+'</div><div class="mmeta">'+(S.activeLead?S.activeLead.fname:'Lead')+' - '+nowStr()+'</div></div>';
+  el.appendChild(d); el.scrollTop=el.scrollHeight;
+  var low=msg.toLowerCase();
+  if (low.includes('stop')||low.includes('quit')||low.includes('unsubscribe')) {
+    if (S.activeLead && S.dncList.indexOf(S.activeLead.phone)<0) {
+      S.dncList.push(S.activeLead.phone);
+      addFeed('warn','DNC: '+S.activeLead.fname+' opted out');
+    }
+  }
+}
+
+function aiStart() {
+  if (!S.activeLead) { toast('Select a lead first'); return; }
+  var key=getSetting('s-ant');
+  if (!key) { toast('Add Anthropic API key in Settings'); goTab('settings'); return; }
+  var l=S.activeLead, ty=TY[l.type]?TY[l.type].label:l.type;
+  var prompt='Write a short warm SMS to re-engage an old insurance lead named '+l.fname+' '+l.lname+', age '+(l.age||'unknown')+', interested in '+ty+' insurance. Agent: '+(getSetting('s-agent')||'Michael')+', Company: '+(getSetting('s-company')||'Heritage Planning Group')+'. Calendar: '+(getSetting('s-cal')||'[calendar link]')+'. Keep under 160 chars. Conversational, not salesy. End with a question.';
+  callClaude(prompt, '');
+}
+
+function sendChat() {
+  var msg=gv('cin'); if (!msg.trim()) return;
+  addLeadMsg(msg); sv('cin','');
+  var key=getSetting('s-ant');
+  if (!key) {
+    setTimeout(function(){addAI('(Add Anthropic API key in Settings for real AI. Demo: I would handle this objection by acknowledging their concern and pivoting to value, then offering a calendar link.)')},700);
+    return;
+  }
+  if (!S.activeLead) { toast('Select a lead first'); return; }
+  var l=S.activeLead, ty=TY[l.type]?TY[l.type].label:l.type;
+  var sys='You are an insurance sales AI agent named '+(getSetting('s-agent')||'Michael')+' with '+(getSetting('s-company')||'Heritage Planning Group')+'. You are texting '+l.fname+' '+l.lname+', an aged lead interested in '+ty+(l.age?' insurance, age '+l.age:' insurance')+'. Handle objections naturally, build rapport, book appointments. Calendar: '+(getSetting('s-cal')||'[calendar link]')+'. Keep replies under 160 chars. Warm and human, never robotic.';
+  callClaude(msg, sys);
+}
+
+function qr(msg) { sv('cin',msg); sendChat(); }
+
+function callClaude(userMsg, sysMsg) {
+  var key=getSetting('s-ant');
+  if (!key) { toast('API key missing - check Settings'); return; }
+  setAIStatus('Thinking...', 'var(--amber)');
+  showTyping(true);
+  var system=sysMsg||'You are an expert insurance sales AI. Handle objections, answer cost questions, book appointments. Keep SMS replies under 160 chars. Be warm and human.';
+  var payload={model:'claude-sonnet-4-20250514',max_tokens:300,system:system,messages:[{role:'user',content:userMsg}]};
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body:JSON.stringify(payload)
+  }).then(function(res){
+    var status=res.status;
+    return res.text().then(function(rawText){
+      showTyping(false);
+      // Show raw for debugging if needed
+      if (status===401) {
+        addAI('Invalid API key (401). Please go to Settings, clear the key field, and paste it again.');
+        setAIStatus('Error','var(--rose)'); return;
+      }
+      if (status===403) {
+        addAI('Access denied (403). Your API key may not have permission or may be from the wrong account.');
+        setAIStatus('Error','var(--rose)'); return;
+      }
+      var data;
+      try { data=JSON.parse(rawText); } catch(e) {
+        addAI('Bad response (HTTP '+status+'). Raw: '+rawText.slice(0,120));
+        setAIStatus('Error','var(--rose)'); return;
+      }
+      if (data.error) {
+        addAI('API error: '+data.error.message+' (type: '+data.error.type+')');
+        setAIStatus('Error','var(--rose)'); return;
+      }
+      var reply=(data.content&&data.content[0]&&data.content[0].text)||'';
+      if (!reply) { addAI('Empty response. Raw: '+rawText.slice(0,120)); setAIStatus('Error','var(--rose)'); return; }
+      addAI(reply);
+      setAIStatus('Active','var(--sig)');
+      addFeed('ok','AI replied to '+(S.activeLead?S.activeLead.fname:'lead')+': "'+reply.slice(0,50)+'"');
+    });
+  }).catch(function(err){
+    showTyping(false);
+    var msg=err.message||String(err);
+    if (msg.toLowerCase().includes('fetch')||msg.toLowerCase().includes('network')||msg.toLowerCase().includes('cors')) {
+      addAI('Network error. Make sure you are connected to the internet and try again.');
+    } else {
+      addAI('Error: '+msg);
+    }
+    setAIStatus('Error','var(--rose)');
+  });
+}
+
+function showTyping(show) {
+  var el=document.getElementById('typing-el');
+  if (el) el.style.display=show?'block':'none';
+}
+
+function setAIStatus(txt, color) {
+  setText('ai-stxt', txt);
+  var d=document.getElementById('ai-dot');
+  if (d) d.style.background=color;
+}
+
+function updateBlastStats() {
+  var total=S.leads.length;
+  var pending=S.leads.filter(function(l){return l.status!=='sent'&&l.status!=='appointment';}).length;
+  setText('bc-t', total.toLocaleString());
+  setText('bc-p', pending.toLocaleString());
+  setText('bc-s', S.sent.toLocaleString());
+}
+
+function startBlast() {
+  var tFilter=gsel('b-type');
+  var pending=S.leads.filter(function(l){return l.status!=='sent'&&l.status!=='appointment';});
+  if (tFilter) pending=pending.filter(function(l){return l.type===tFilter;});
+  if (!pending.length) { toast('No leads to send'); return; }
+  var kix=getSetting('s-kix'), biz=getSetting('s-biz'), email=getSetting('s-email');
+  if (!kix||!biz||!email) { toast('Configure Kixie in Settings'); goTab('settings'); return; }
+  S.isBlasting=true; S.stopF=false; S.pauseF=false;
+  document.getElementById('btn-go').style.display='none';
+  document.getElementById('btn-pause').style.display='inline-flex';
+  document.getElementById('btn-stop').style.display='inline-flex';
+  setGS('Blasting', true);
+  addFeed('info','Blast started: '+pending.length.toLocaleString()+' leads');
+  var bSz=parseInt(gv('b-batch'))||10;
+  var delay=(parseFloat(gv('b-delay'))||2)*1000;
+  var batches=chunkArr(pending, bSz);
+  var done=0, total=pending.length;
+  function nextBatch(bi) {
+    if (bi>=batches.length||S.stopF) {
+      finishBlast();
+      return;
+    }
+    if (S.pauseF) { setTimeout(function(){nextBatch(bi);},300); return; }
+    var batch=batches[bi];
+    var promises=batch.map(function(l){
+      var msg=buildMsg(l.fname,l.lname,l.type);
+      return sendKixie(kix,biz,email,getSetting('s-from'),l.phone,msg).then(function(){
+        l.status='sent'; l.ts=nowStr(); S.sent++; done++;
+        addFeed('ok','Sent to '+l.fname+' '+l.lname);
+      }).catch(function(err){
+        l.status='failed'; l.ts=nowStr(); S.failed++; done++;
+        addFeed('err','Failed: '+l.fname+' - '+err.message);
+      });
+    });
+    Promise.all(promises).then(function(){
+      var pct=Math.round(done/total*100);
+      var bar=document.getElementById('blast-bar');
+      if (bar) bar.style.width=pct+'%';
+      setText('blast-pct', pct+'%');
+      setText('blast-lbl', done.toLocaleString()+' / '+total.toLocaleString());
+      updateKPIs(); updateBlastStats();
+      setTimeout(function(){nextBatch(bi+1);}, delay);
+    });
+  }
+  nextBatch(0);
+}
+
+function finishBlast() {
+  S.isBlasting=false;
+  document.getElementById('btn-go').style.display='flex';
+  document.getElementById('btn-pause').style.display='none';
+  document.getElementById('btn-stop').style.display='none';
+  var msg=S.stopF?('Stopped - '+S.sent+' sent'):('Done! '+S.sent.toLocaleString()+' sent');
+  setText('blast-lbl', msg);
+  setGS('Idle', false);
+  toast(msg);
+  addFeed('info', msg);
+  updateKPIs();
+}
+
+function togglePause() {
+  S.pauseF=!S.pauseF;
+  var btn=document.getElementById('btn-pause');
+  if (btn) btn.textContent=S.pauseF?'▶':'⏸';
+  setGS(S.pauseF?'Paused':'Blasting', true);
+}
+
+function stopBlast() { S.stopF=true; S.pauseF=false; toast('Stopping...'); }
+
+function sendKixie(apikey, bizid, email, from, to, message) {
+  var url='https://apig.kixie.com/app/event?apikey='+encodeURIComponent(apikey);
+  var payload={businessid:bizid,email:email,target:to,eventname:'sms',message:message,apikey:apikey};
+  if (from) payload.fromNumber=from;
+  return fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)}).then(function(res){return res.json();}).then(function(data){
+    if (data.error) throw new Error(data.message||data.error||'Kixie error');
+    return data;
+  });
+}
+
+function buildMsg(fn, ln, type) {
+  var a=getSetting('s-agent')||'Your Agent', co=getSetting('s-company')||'Our Company';
+  var tpl=TPL[type]||TPL.other;
+  return tpl.replace(/{fn}/g,fn||'there').replace(/{ln}/g,ln||'').replace(/{ag}/g,a).replace(/{co}/g,co);
+}
+
+function renderCamp() {
+  var el=document.getElementById('camp-el');
+  if (!el) return;
+  var html='';
+  var keys=Object.keys(TY);
+  for (var i=0;i<keys.length;i++) {
+    var k=keys[i], m=TY[k];
+    var count=S.leads.filter(function(l){return l.type===k;}).length;
+    var aged=S.leads.filter(function(l){return l.type===k&&l.status==='aged';}).length;
+    html+='<div style="display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--rim)">'
+      +'<span style="font-size:18px">'+m.icon+'</span>'
+      +'<div style="flex:1"><div style="font-size:13px;font-weight:700">'+m.label+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+count+' leads &middot; '+aged+' aged</div></div>'
+      +'<span class="ttag '+m.cls+'">'+m.label+'</span></div>';
+  }
+  el.innerHTML=html;
+}
+
+function bookAppt() {
+  var name=gv('bk-name'), ph=gv('bk-ph'), date=gv('bk-date'), time=gv('bk-time'), type=gsel('bk-type');
+  if (!name||!date) { toast('Name and date required'); return; }
+  S.appts.push({id:uid(),name:name,phone:ph,date:date,time:time,type:type,status:'confirmed',created:nowStr()});
+  for (var i=0;i<S.leads.length;i++) {
+    if (S.leads[i].phone===ph) { S.leads[i].status='appointment'; S.leads[i].score=95; break; }
+  }
+  closeSheet('sh-book');
+  renderAppts(); updateKPIs();
+  var nb=document.getElementById('nb-appts');
+  if (nb) { nb.textContent=S.appts.length; nb.classList.toggle('h',S.appts.length===0); }
+  toast('Booked: '+name+' on '+date+' at '+time);
+  addFeed('ok','Appointment: '+name+' - '+date+' '+time);
+}
+
+function renderAppts() {
+  var today=new Date().toISOString().split('T')[0];
+  setText('ap-t', S.appts.length);
+  setText('ap-td', S.appts.filter(function(a){return a.date===today;}).length);
+  setText('ap-up', S.appts.filter(function(a){return a.date>=today;}).length);
+  setText('appts-sub', S.appts.length+' booked');
+  var nb=document.getElementById('nb-appts');
+  if (nb) { nb.textContent=S.appts.length; nb.classList.toggle('h',S.appts.length===0); }
+  var el=document.getElementById('appts-el');
+  if (!el) return;
+  if (!S.appts.length) { el.innerHTML='<div class="empty"><div class="empty-ico">📅</div><p>No appointments yet.<br>AI books these automatically.</p></div>'; return; }
+  var sorted=S.appts.slice().sort(function(a,b){return a.date.localeCompare(b.date);});
+  var html='';
+  for (var i=0;i<sorted.length;i++) {
+    var a=sorted[i], ty=TY[a.type]||TY.other;
+    var d=new Date(a.date+'T12:00:00');
+    var dayStr=d.toLocaleDateString('en',{weekday:'short',month:'short',day:'numeric'});
+    html+='<div class="apcard">'
+      +'<div class="aptime"><div class="apday">'+dayStr+'</div><div class="aphr">'+a.time+'</div></div>'
+      +'<div class="apinfo"><div class="apname">'+esc(a.name)+'</div>'
+      +'<div class="apdet"><span class="ttag '+ty.cls+'">'+ty.label+'</span></div></div>'
+      +'<button onclick="cancelAppt(\''+a.id+'\')" class="btn btn-rose btn-xs">X</button></div>';
+  }
+  el.innerHTML=html;
+}
+
+function cancelAppt(id) {
+  S.appts=S.appts.filter(function(a){return a.id!==id;});
+  renderAppts(); updateKPIs(); toast('Appointment cancelled');
+}
+
+function renderHomeAppts() {
+  var el=document.getElementById('home-appts-el');
+  if (!el) return;
+  var today=new Date().toISOString().split('T')[0];
+  var up=S.appts.filter(function(a){return a.date>=today;}).slice(0,3);
+  if (!up.length) { el.innerHTML='<div class="empty" style="padding:14px 0"><div class="empty-ico" style="font-size:26px">📅</div><p>No upcoming appointments</p></div>'; return; }
+  var html='';
+  for (var i=0;i<up.length;i++) {
+    var a=up[i], ty=TY[a.type]||TY.other;
+    html+='<div style="display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--rim)">'
+      +'<span style="font-family:\'JetBrains Mono\',monospace;font-size:12px;color:var(--amber);min-width:44px">'+a.time+'</span>'
+      +'<span style="font-size:14px;font-weight:700;flex:1">'+esc(a.name)+'</span>'
+      +'<span class="ttag '+ty.cls+'">'+ty.label+'</span></div>';
+  }
+  el.innerHTML=html;
+}
+
+function addFeed(type, msg) {
+  S.feed.unshift({type:type,msg:msg,time:nowStr()});
+  if (S.feed.length>50) S.feed.length=50;
+  renderFeed();
+}
+
+function renderFeed() {
+  var el=document.getElementById('feed-el');
+  if (!el) return;
+  if (!S.feed.length) { el.innerHTML='<div class="empty"><div class="empty-ico">📡</div><p>AI is standing by</p></div>'; return; }
+  var colors={ok:'var(--sig)',err:'var(--rose2)',info:'var(--blue2)',warn:'var(--amber)'};
+  var html='';
+  for (var i=0;i<S.feed.length;i++) {
+    var f=S.feed[i];
+    html+='<div style="display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(30,36,56,.4)">'
+      +'<div style="width:8px;height:8px;border-radius:50%;background:'+(colors[f.type]||'var(--muted)')+';margin-top:4px;flex-shrink:0"></div>'
+      +'<div style="flex:1;min-width:0"><div style="font-size:13px;line-height:1.4;color:'+(colors[f.type]||'var(--text2)')+'">'+esc(f.msg)+'</div>'
+      +'<div style="font-size:10px;font-family:\'JetBrains Mono\',monospace;color:var(--muted);margin-top:2px">'+f.time+'</div></div></div>';
+  }
+  el.innerHTML=html;
+}
+
+function updateKPIs() {
+  var t=S.leads.length;
+  var avg=t>0?Math.round(S.leads.reduce(function(a,l){return a+l.score;},0)/t):0;
+  setText('k-total', t.toLocaleString());
+  setText('k-appts', S.appts.length);
+  setText('k-texts', S.sent.toLocaleString());
+  setText('k-score', t>0?avg:'--');
+  var nb=document.getElementById('nb-leads');
+  if (nb) { nb.textContent=t; nb.classList.toggle('h',t===0); }
+  renderCamp();
+}
+
+function setGS(txt, live) {
+  var p=document.getElementById('gspill'), d=document.getElementById('gsdot');
+  setText('gstxt', txt);
+  if (p) { p.className='sbar-pill'+(live?' live':''); }
+  if (d) { d.className='sdot'+(live?' on':''); }
+}
+
+function saveSettings() {
+  var keys=['s-ant','s-kix','s-biz','s-email','s-from','s-agent','s-company','s-cal'];
+  for (var i=0;i<keys.length;i++) {
+    var el=document.getElementById(keys[i]);
+    if (el) {
+      try { localStorage.setItem('lp_'+keys[i], el.value); } catch(e) {}
+    }
+  }
+  updateSysStatus();
+  toast('Settings saved!');
+}
+
+function loadSettings() {
+  var keys=['s-ant','s-kix','s-biz','s-email','s-from','s-agent','s-company','s-cal'];
+  for (var i=0;i<keys.length;i++) {
+    var stored='';
+    try { stored=localStorage.getItem('lp_'+keys[i])||''; } catch(e) {}
+    var el=document.getElementById(keys[i]);
+    if (el && stored) el.value=stored;
+  }
+  updateSysStatus();
+}
+
+function getSetting(key) {
+  var el=document.getElementById(key);
+  if (el && el.value.trim()) return el.value.trim();
+  var stored='';
+  try { stored=localStorage.getItem('lp_'+key)||''; } catch(e) {}
+  return stored;
+}
+
+function updateSysStatus() {
+  var ant=getSetting('s-ant');
+  var pill=document.getElementById('gspill');
+  var dot=document.getElementById('gsdot');
+  var notice=document.getElementById('ai-key-notice');
+  if (ant) {
+    if (pill) pill.className='sbar-pill live';
+    if (dot) dot.className='sdot on';
+    setText('gstxt','AI Ready');
+    if (notice) { notice.className='notice n-sig'; notice.innerHTML='AI is active and ready. Select a lead and tap <strong>AI Start Convo</strong>.'; }
+  } else {
+    if (pill) pill.className='sbar-pill';
+    if (dot) dot.className='sdot';
+    setText('gstxt','Idle');
+    if (notice) { notice.className='notice n-blue'; notice.innerHTML='Add your <strong>Anthropic API key</strong> in Settings to activate real AI responses.'; }
+  }
+}
+
+function testSend() {
+  var kix=getSetting('s-kix'), biz=getSetting('s-biz'), email=getSetting('s-email'), ph=gv('s-test');
+  var type=gsel('s-test-type');
+  if (!kix||!biz||!email) { toast('Fill in Kixie credentials'); return; }
+  if (!ph) { toast('Enter test phone number'); return; }
+  toast('Sending test...');
+  sendKixie(kix,biz,email,getSetting('s-from'),ph,buildMsg('Robert','Johnson',type))
+    .then(function(){toast('Test sent! Check your phone.');})
+    .catch(function(e){toast('Failed: '+e.message);});
+}
+
+function openSheet(id) { var el=document.getElementById(id); if (el) el.classList.add('open'); }
+function closeSheet(id) { var el=document.getElementById(id); if (el) el.classList.remove('open'); }
+
+function uid() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+function nowStr() { return new Date().toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}); }
+function gv(id) { var el=document.getElementById(id); return el?el.value.trim():''; }
+function gsel(id) { var el=document.getElementById(id); return el?el.value:''; }
+function sv(id,val) { var el=document.getElementById(id); if (el) el.value=val; }
+function setText(id,val) { var el=document.getElementById(id); if (el) el.textContent=val; }
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function chunkArr(arr,n) { var r=[]; for (var i=0;i<arr.length;i+=n) r.push(arr.slice(i,i+n)); return r; }
+function toast(msg) {
+  var t=document.getElementById('toast-el');
+  if (!t) return;
+  t.textContent=msg; t.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(function(){t.classList.remove('show');},3000);
+}
+</script>
+
+</body>
+</html>
